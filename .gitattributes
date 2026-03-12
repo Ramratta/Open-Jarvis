@@ -1,0 +1,1 @@
+desktop/src-tauri/binaries/ollama-aarch64-apple-darwin filter=lfs diff=lfs merge=lfs -text
