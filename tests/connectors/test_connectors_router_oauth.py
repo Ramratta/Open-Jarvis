@@ -324,9 +324,13 @@ def test_oauth_callback_exchanges_and_connects(
 
 
 def test_oauth_callback_error_param_renders_failure(client: TestClient) -> None:
-    resp = client.get("/v1/connectors/gdrive/oauth/callback?error=access_denied")
+    resp = client.get(
+        "/v1/connectors/gdrive/oauth/callback",
+        params={"error": "<script>alert(1)</script>"},
+    )
     assert resp.status_code == 400
-    assert "access_denied" in resp.text
+    assert "&lt;script&gt;alert(1)&lt;/script&gt;" in resp.text
+    assert "<script>alert(1)</script>" not in resp.text
 
 
 def test_oauth_callback_exchange_failure_renders_error(
@@ -337,13 +341,15 @@ def test_oauth_callback_exchange_failure_renders_error(
     client.post("/v1/connectors/gdrive/connect", json={"code": _CLIENT_PAIR})
 
     def _boom(*_a: Any, **_k: Any) -> dict[str, Any]:
-        raise RuntimeError("token endpoint 400")
+        raise RuntimeError("<script>alert(1)</script>")
 
     with patch.object(oauth_mod, "_exchange_token", side_effect=_boom):
         resp = client.get("/v1/connectors/gdrive/oauth/callback?code=bad")
 
     assert resp.status_code == 500
     assert "Token Exchange Failed" in resp.text
+    assert "&lt;script&gt;alert(1)&lt;/script&gt;" in resp.text
+    assert "<script>alert(1)</script>" not in resp.text
 
 
 def test_oauth_callback_rejects_missing_access_token_without_false_success(
